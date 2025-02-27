@@ -1,0 +1,112 @@
+{
+  "name": "@elizaos-plugins/plugin-speech-tts",
+  "version": "0.1.8+build.1",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "@elizaos/source": "./src/index.ts",
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "package.json",
+    "LICENSE",
+    "tsup.config.ts"
+  ],
+  "dependencies": {
+    "@deepgram/sdk": "^3.9.0",
+    "echogarden": "2.0.14",
+    "formdata-node": "^6.0.3",
+    "nodejs-whisper": "0.2.6",
+    "openai": "^4.81.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.12.0",
+    "tsup": "8.3.6",
+    "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "build": "tsup --format esm --dts",
+    "dev": "tsup --format esm --dts --watch",
+    "lint": "eslint --fix  --cache ."
+  },
+  "agentConfig": {
+    "pluginType": "elizaos:client:1.0.0",
+    "pluginParameters": {
+      "OPENAI_API_KEY": {
+        "type": "string"
+      },
+      "OPENAI_API_URL": {
+        "type": "string",
+        "default": "https://api.openai.com",
+        "optional": true
+      },
+      "ELEVENLABS_XI_API_URL": {
+        "type": "string",
+        "default": "https://api.elevenlabs.io/v1",
+        "optional": true
+      },
+      "ELEVENLABS_XI_API_KEY": {
+        "type": "string",
+        "optional": true
+      },
+      "ELEVENLABS_MODEL_ID": {
+        "type": "string",
+        "default": "eleven_monolingual_v1",
+        "optional": true
+      },
+      "ELEVENLABS_VOICE_ID": {
+        "type": "string",
+        "optional": true
+      },
+      "ELEVENLABS_VOICE_STABILITY": {
+        "type": "string",
+        "default": "0.5",
+        "optional": true
+      },
+      "ELEVENLABS_VOICE_SIMILARITY_BOOST": {
+        "type": "string",
+        "default": "0.75",
+        "optional": true
+      },
+      "ELEVENLABS_VOICE_STYLE": {
+        "type": "string",
+        "default": "0",
+        "optional": true
+      },
+      "ELEVENLABS_VOICE_USE_SPEAKER_BOOST": {
+        "type": "string",
+        "default": "true",
+        "optional": true
+      },
+      "ELEVENLABS_OPTIMIZE_STREAMING_LATENCY": {
+        "type": "string",
+        "default": "0",
+        "optional": true
+      },
+      "ELEVENLABS_OUTPUT_FORMAT": {
+        "type": "string",
+        "default": "pcm_16000",
+        "optional": true
+      },
+      "VITS_VOICE": {
+        "type": "string",
+        "optional": true
+      },
+      "VITS_MODEL": {
+        "type": "string",
+        "optional": true
+      }
+    }
+  }
+}
