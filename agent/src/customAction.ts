@@ -8,7 +8,7 @@ import {
     type Action,
 } from "@elizaos/core";
 import { ElevenLabsClient } from "elevenlabs";
-import { createWriteStream, mkdirSync, existsSync } from 'fs';
+import { createWriteStream, mkdirSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { dirname } from 'path';
 import { Anthropic, ClientOptions } from '@anthropic-ai/sdk';
@@ -16,7 +16,7 @@ import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { abi } from "./abi";
 import { elizaLogger } from "@elizaos/core";
-
+import { PinataSDK } from "pinata-web3";
 import { avalancheFuji } from "viem/chains";
 
 export interface Prompt {
@@ -43,6 +43,8 @@ export const generatePodcast: Action = {
         const anthropicApiKey = process.env.ANTHROPIC_API_KEY
         const elevenLabsApiKey = process.env.ELEVENLABS_XI_API_KEY
         const privateKey = process.env.EVM_PRIVATE_KEY
+        const pinataJwt = process.env.PINATA_JWT
+
         let finalTone
         let finalNarrativeStyle
         let finalUnexpectedTwist
@@ -60,6 +62,11 @@ export const generatePodcast: Action = {
         if (!privateKey) {
             console.error("EVM PRIVATE KEY NOT")
             throw new Error("EVM PRIVATE KEY NOT")
+        }
+
+        if (!pinataJwt) {
+            console.error("PINATA JWT NOT")
+            throw new Error("PINATA JWT NOT")
         }
 
         const account = privateKeyToAccount(`0x${privateKey}`);
@@ -86,7 +93,7 @@ export const generatePodcast: Action = {
             });
 
             const tx = await walletClient.writeContract(request);
-            console.log("tx : ", tx);
+            elizaLogger.info("## Transaction Hash  ## :", tx);
 
             const eventPromise = new Promise((resolve, reject) => {
                 let timeoutId: NodeJS.Timeout;
@@ -129,7 +136,6 @@ export const generatePodcast: Action = {
             });
 
             const logs = await eventPromise;
-            //console.log("Processing event logs:", logs);
             elizaLogger.info("Processing event logs");
 
             const { args } = logs[0];
@@ -142,10 +148,9 @@ export const generatePodcast: Action = {
                 throw new Error("Error getting the random parameters")
             }
             elizaLogger.info("Random parameters:", { tone, narrativeStyle, unexpectedTwist });
-            //console.log("Random parameters:", { tone, narrativeStyle, unexpectedTwist });
 
         } catch (error) {
-            console.log("error : ", error);
+            elizaLogger.error("error : ", error);
         }
 
         const prompt: Prompt =
@@ -183,8 +188,6 @@ export const generatePodcast: Action = {
             .map(block => (block as { type: 'text'; text: string }).text)
             .join('\n');
 
-        //console.log("textResult : ", textResult);
-
         try {
 
             const client = new ElevenLabsClient({ apiKey: elevenLabsApiKey });
@@ -194,40 +197,80 @@ export const generatePodcast: Action = {
                 model_id: "eleven_turbo_v2"
             });
 
-            console.log("Audio stream Creado .. ")
+            elizaLogger.info("## Audio stream Created #")
 
             const fileName = `speech_${Date.now()}.mp3`;
             const filePath = join(process.cwd(), 'audio_files', fileName);
-            console.log("File Path Creado .. ")
+            elizaLogger.info("File Path Creado .. ")
             // Crear el directorio si no existe
             const dirPath = dirname(filePath);
             if (!existsSync(dirPath)) {
                 mkdirSync(dirPath, { recursive: true });
             }
-            console.log("Creando el WriteStream .. ")
+            elizaLogger.info("Creando el WriteStream .. ")
             // Crear un write stream
             const fileStream = createWriteStream(filePath);
-            console.log("FileStream Creado .. ")
+            elizaLogger.info("## FileStream Created ## ")
             // Pipe el stream de audio al archivo
             for await (const chunk of audioStream) {
                 fileStream.write(chunk);
             }
 
-            console.log("Cerrando .. ")
+            elizaLogger.info("Closing up ... ")
             // Cerrar el archivo
             fileStream.end();
-            console.log("Cerrado X ")
+            elizaLogger.info("## CLOSED ##")
 
-            console.log(`Audio saved to: ${filePath}`);
+            elizaLogger.info(`Audio saved to: ${filePath}`);
 
             // Cerrar el archivo
             fileStream.end();
 
+            const pinata = new PinataSDK({
+                pinataJwt: pinataJwt,
+                pinataGateway: "moccasin-beautiful-sturgeon-965.mypinata.cloud",
+            });
+
+            try {
+                const fileData = readFileSync(filePath);
+                const file = new File(
+                    [new Uint8Array(fileData)],
+                    fileName,
+                    { type: 'audio/mp3' }
+                );
+
+                const upload = await pinata.upload.file(file);
+
+                elizaLogger.info("## UPLOAD ##")
+                const ipfsHash = upload.IpfsHash;
+                const uploadMetadata = await pinata.upload.json({
+                    name: "BuffiCast Podcast",
+                    description: `Podcast generated by BuffiCast, aleatory parameters: ${JSON.stringify(prompt.random_parameters)}`,
+                    image: `https://ipfs.io/ipfs/${ipfsHash}`,
+                })
+
+                const metadataIpfsHash = uploadMetadata.IpfsHash;
+
+                const { request: requestUpdateIpfs } = await publicClient.simulateContract({
+                    account,
+                    address: contractAddress,
+                    abi: abi,
+                    functionName: "updateLastTokenURI",
+                    args: [`https://ipfs.io/ipfs/${metadataIpfsHash}`]
+                });
+    
+                const txUpdate = await walletClient.writeContract(requestUpdateIpfs);
+                elizaLogger.info("## Transaction Hash Updated ## :", txUpdate);
+                elizaLogger.info("## Process Ended Succesfully ## :", txUpdate);
+
+
+            } catch (error) {
+                console.log(error);
+            }
 
         } catch (error) {
             console.log("error : ", error);
         }
-        //}
 
         return true;
     },
