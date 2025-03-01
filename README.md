@@ -10,7 +10,7 @@ BuffiCast is an AI-powered podcast generation system built on top of Eliza OS. I
 
 ## ✨ Features
 
-- 🎲 On-chain randomization of podcast parameters by using Chainlink VRF
+- 🎲 On-chain randomization of podcast parameters by using Wolf Blockchain
 - 🗣️ High-quality text-to-speech using ElevenLabs
 - 📝 AI content generation with Claude 3
 - 🌐 IPFS storage integration with Pinata

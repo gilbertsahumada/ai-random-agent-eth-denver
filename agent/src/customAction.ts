@@ -41,7 +41,7 @@ export const generatePodcast: Action = {
         const pinataJwt = process.env.PINATA_JWT;
 
         if (!privateKey || !contractAddress || !contractAddressFlow || !apiKey || !xiApiKey || !pinataJwt) {
-            _callback({ text: "Missing environment variables. Please check the configuration." });
+            _callback({ text: "⚠️ Missing environment variables. Please check the configuration." });
             return false;
         }
 
@@ -57,11 +57,11 @@ export const generatePodcast: Action = {
             const ipfsService = new IPFSService(pinataJwt);
 
             // Get Random parameters
-            _callback({ text: "Requesting random parameters from Chainlink VRF..." });
+            _callback({ text: "🎲 Requesting random parameters from Flow Blockchain ..." });
             const randomParams = await blockchainService.requestRandomParameters();
 
             // Generate text content
-            _callback({ text: "Generating podcast content..." });
+            _callback({ text: "✍️ Generating podcast content..." });
             const content = await generatePodcastContent(
                 messages ? messages : ["Awesome messages!"],
                 randomParams,
@@ -69,11 +69,11 @@ export const generatePodcast: Action = {
             );
 
             // Generate audio
-            _callback({ text: "Converting text to speech..." });
+            _callback({ text: "🎙️ Converting text to speech..." });
             const audioPath = await audioService.generateAudio(content);
 
             // Upload to IPFS
-            _callback({ text: "Uploading to IPFS..." });
+            _callback({ text: "📤 Uploading to IPFS..." });
             const audioHash = await ipfsService.uploadAudioFile(audioPath);
 
             const metadata: PodcastMetadata = {
@@ -86,15 +86,15 @@ export const generatePodcast: Action = {
             const metadataHash = await ipfsService.uploadMetadata(metadata);
 
             // Update token URI
-            _callback({ text: "Updating NFT metadata..." });
+            _callback({ text: "🔄 Updating NFT metadata..." });
             await blockchainService.updateTokenURI(`https://ipfs.io/ipfs/${metadataHash}`);
 
-            _callback({ text: "Podcast generated and minted successfully! Check OpenSea to view your NFT." });
+            _callback({ text: "✨ Podcast generated and minted successfully! Check OpenSea to view your NFT 🎉" });
             return true;
 
         } catch (error) {
             elizaLogger.error("Podcast Generation Error:", error);
-            _callback({ text: "An error occurred while generating the podcast." });
+            _callback({ text: "❌ An error occurred while generating the podcast." });
             return false;
         }
     },
