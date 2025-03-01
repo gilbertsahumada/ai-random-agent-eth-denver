@@ -45,20 +45,7 @@ export const generatePodcastFlow: Action = {
             _callback({ text: "⚠️ Missing environment variables. Please check the configuration." });
             return false;
         }
-
-        const blockchainService = new BlockchainService(
-            privateKey,
-            contractAddress,
-            contractAddressFlow,
-            true
-        );
-
-        const audioHash = "bafybeicye2ow3rszgrn3ymb3yy5uxixr6amdx2lwvqbdvrhvhx24jabcie"
-        const metadataHash = "bafkreiewxzdg7g6mq7vfdwef3zoc2os2ykykxitykdor4teqcxjecr7kse"
-        const resp = await blockchainService.callStoryProtocol(audioHash, metadataHash);
-        console.log("resp story : ", resp)
-
-        /*
+        
         try {
             // Initialize services
             const blockchainService = new BlockchainService(
@@ -118,8 +105,6 @@ export const generatePodcastFlow: Action = {
             _callback({ text: "❌ An error occurred while generating the podcast." });
             return false;
         }
-        */
-
     },
 
     examples: [
@@ -153,7 +138,7 @@ async function generatePodcastContent(messages: string[], randomParams: any, api
         topic: "Ethereum Denver 2025 daily podcast",
         daily_messages: messages,
         random_parameters: randomParams,
-        duration: "30 Seconds",
+        duration: "20 Seconds",
         language: "English"
     };
 

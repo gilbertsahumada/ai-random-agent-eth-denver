@@ -613,7 +613,10 @@ export async function createAgent(
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        actions: [generatePodcastCL, generatePodcastFlow],
+        actions: [
+            generatePodcastCL,
+            //generatePodcastFlow
+        ],
         plugins: [
             bootstrapPlugin as Plugin,
             TTSGenerationPlugin as Plugin,  // Make sure this is included

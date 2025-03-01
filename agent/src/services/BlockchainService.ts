@@ -9,7 +9,6 @@ import { StoryClient, StoryConfig } from "@story-protocol/core-sdk";
 import { aeneid } from "@story-protocol/core-sdk";
 import { toHex } from 'viem';
 import { createHash } from 'crypto'
-import axios from 'axios'
 import { IPFSService } from "./IPFSService";
 
 export class BlockchainService {
@@ -35,16 +34,17 @@ export class BlockchainService {
             chainId: "aeneid",
         });
 
+        const localHttp = isFlow ? http(flowTestnet.rpcUrls[0]) : http("https://rpc.ankr.com/avalanche_fuji");
+
 
         this.publicClient = createPublicClient({
             chain: isFlow ? flowTestnet : avalancheFuji,
-            transport: http(),
-
+            transport: localHttp,
         });
 
         this.walletClient = createWalletClient({
-            chain: flowTestnet ? flowTestnet : avalancheFuji,
-            transport: http(),
+            chain: isFlow ? flowTestnet : avalancheFuji,
+            transport: localHttp,
             account
         });
     }
@@ -53,6 +53,7 @@ export class BlockchainService {
         try {
 
             if (this.isFlow) {
+                console.log("ENTRO AL ISFLOW")
                 const { request } = await this.publicClient.simulateContract({
                     address: this.contractAddressFlow as `0x${string}`,
                     abi: abiFlow,
@@ -63,7 +64,7 @@ export class BlockchainService {
                 const txParams = await this.walletClient.writeContract(request);
                 elizaLogger.info("Random Request Transaction:", txParams);
                 return txParams
-            } else {
+            } else {                
                 const { request } = await this.publicClient.simulateContract({
                     address: this.contractAddress as `0x${string}`,
                     abi: abi,
@@ -91,8 +92,8 @@ export class BlockchainService {
             // Wait for VRF event
             //return await this.waitForVRFEvent();
         } catch (error) {
-            elizaLogger.error("Random Request Error:", error);
-            throw error;
+            elizaLogger.error("Random Request Error");
+            //throw error;
         }
     }
 
@@ -114,7 +115,7 @@ export class BlockchainService {
 
             try {
                 unwatch = this.publicClient.watchContractEvent({
-                    address: this.contractAddress,
+                    address: this.contractAddress as `0x${string}`,
                     abi: abi,
                     eventName: "PodcastParametersGenerated",
                     onError: error => {

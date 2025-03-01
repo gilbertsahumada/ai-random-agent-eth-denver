@@ -35,8 +35,7 @@
             {
                 "user": "bufficast",
                 "content": {
-                    "text": "I'll generate a unique podcast episode about Ethereum using RNG! Each episode is one-of-a-kind and will be tokenized as an NFT.",
-                    "action": "GENERATE_SPEECH"
+                    "text": "I'll generate a unique podcast episode about Ethereum using RNG! Each episode is one-of-a-kind and will be tokenized as an NFT."
                 }
             }
         ],
@@ -50,8 +49,7 @@
             {
                 "user": "bufficast",
                 "content": {
-                    "text": "Let's create some Web3 magic! I'll generate a unique podcast with randomized parameters and mint it as an NFT.",
-                    "action": "GENERATE_SPEECH"
+                    "text": "Let's create some Web3 magic! I'll generate a unique podcast with randomized parameters and mint it as an NFT."
                 }
             }
         ]

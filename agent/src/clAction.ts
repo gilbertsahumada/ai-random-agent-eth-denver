@@ -61,6 +61,7 @@ export const generatePodcastCL: Action = {
             _callback({ text: "🎲 Requesting random parameters from Chainlink VRF ..." });
             const randomParams = await blockchainService.requestRandomParameters();
 
+
             // Generate text content
             _callback({ text: "✍️ Generating podcast content..." });
             const content = await generatePodcastContent(
@@ -97,6 +98,7 @@ export const generatePodcastCL: Action = {
             _callback({ text: `✨ Podcast secured on story protocol 🎉 Hash: ${resp.txHash} - Ip Id : ${resp.ipId}` });
 
             _callback({ text: "✨ Podcast generated and minted successfully! Check OpenSea to view your NFT 🎉: https://testnets.opensea.io/collection/podcast-chapter-1" });
+
             return true;
 
         } catch (error) {
@@ -137,7 +139,7 @@ async function generatePodcastContent(messages: string[], randomParams: any, api
         topic: "Ethereum Denver 2025 daily podcast",
         daily_messages: messages,
         random_parameters: randomParams,
-        duration: "30 Seconds",
+        duration: "20 Seconds",
         language: "English"
     };
 
