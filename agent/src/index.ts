@@ -614,8 +614,8 @@ export async function createAgent(
         evaluators: [],
         character,
         actions: [
-            generatePodcastCL,
-            //generatePodcastFlow
+            //generatePodcastCL,
+            generatePodcastFlow
         ],
         plugins: [
             bootstrapPlugin as Plugin,

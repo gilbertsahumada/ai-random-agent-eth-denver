@@ -45,7 +45,21 @@ export const generatePodcastFlow: Action = {
             _callback({ text: "⚠️ Missing environment variables. Please check the configuration." });
             return false;
         }
-        
+
+        const blockchainService = new BlockchainService(
+            privateKey,
+            contractAddress,
+            contractAddressFlow,
+            true
+        );
+
+        /*
+        ## Just for testing purposes ##
+        const resp = await blockchainService.callStoryProtocol("bafybeihpyfleqpixjxcpu7pvasnagci2r7tqqrzqbwzf7sillybwiwg6ve", "bafkreigwkesei65xypqad6eiu2wyd2y2almdc3kx2ubg4c5xyavnqnoume");
+        console.log(resp);
+        */
+
+
         try {
             // Initialize services
             const blockchainService = new BlockchainService(
@@ -92,6 +106,8 @@ export const generatePodcastFlow: Action = {
             await blockchainService.updateTokenURI(`https://ipfs.io/ipfs/${metadataHash}`);
 
             _callback({ text: "🔗 Minting NFT in Story ..." });
+
+            await wait(3000); // Wait for few seconds before minting the NFT
             /// Story INtegration
             const resp = await blockchainService.callStoryProtocol(audioHash, metadataHash);
 
@@ -105,6 +121,7 @@ export const generatePodcastFlow: Action = {
             _callback({ text: "❌ An error occurred while generating the podcast." });
             return false;
         }
+
     },
 
     examples: [
@@ -153,6 +170,9 @@ async function generatePodcastContent(messages: string[], randomParams: any, api
         .map(block => (block as { type: 'text'; text: string }).text)
         .join('\n');
 }
+
+// Helper function for delay (add this at the top with other imports)
+const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 
 

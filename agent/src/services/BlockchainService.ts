@@ -64,7 +64,7 @@ export class BlockchainService {
                 const txParams = await this.walletClient.writeContract(request);
                 elizaLogger.info("Random Request Transaction:", txParams);
                 return txParams
-            } else {                
+            } else {
                 const { request } = await this.publicClient.simulateContract({
                     address: this.contractAddress as `0x${string}`,
                     abi: abi,
@@ -191,16 +191,13 @@ export class BlockchainService {
             const currentTimestamp = Math.floor(Date.now() / 1000).toString();
             const urlImage = 'bafkreifqzkq7tzppc22fa2f52sg2cruvomne2tp34yhdnx3ub2xw24b52m'
 
-            console.log("Obteniendo imagen")
             const image = await ipfsService.getFileContent(urlImage)
-            console.log("Imagen obtenida : ", image)
 
-            const imageHash = await this.getFileHash(image); 
-            console.log("Hash de la imagen")
+            const imageHash = await this.getFileHash(image);
+
             const audio = await ipfsService.getFileContent(mediaUrl)
-            console.log("Audio obtenido")
+
             const mediaHash = await this.getFileHash(audio)
-            console.log("Hash del audio")
 
             const ipMetadata = {
                 title: 'BuffiCast 2025',
@@ -238,7 +235,33 @@ export class BlockchainService {
             })
 
             elizaLogger.info("Story Protocol Response:", response);
-            return { txHash: response.txHash, ipdId: response.ipId, tokenId: response.tokenId }
+
+            const ipId = response.ipId;
+
+            if (response.success) {
+                elizaLogger.info(`Minted and registered IP at transaction hash ${response.txHash}.`)
+            } else {
+                elizaLogger.info(`IP already registered. Skipping minting.`)
+            }
+
+            if(!ipId) {
+                elizaLogger.error("IP Id not found")
+                throw new Error("IP Id not found")
+            }
+
+            const responseLicense = await this.storyClient.license.attachLicenseTerms({
+                licenseTermsId: "1",
+                ipId: ipId,
+                txOptions: { waitForTransaction: true }
+            });
+
+            if (responseLicense.success) {
+                console.log(`Attached License Terms to IPA at transaction hash ${responseLicense.txHash}.`)
+            } else {
+                console.log(`License Terms already attached to this IPA.`)
+            }
+
+            return  { txHash: response.txHash, ipdId: response.ipId, tokenId: response.tokenId } = response;
 
         } catch (error) {
             elizaLogger.error("Story Protocol Error:", error);
@@ -249,7 +272,7 @@ export class BlockchainService {
     async getFileHash(file: any): Promise<string> {
         try {
             let blob: Blob;
-            
+
             // Handle the case when file is an object with data property
             if (file.data && file.data instanceof Blob) {
                 blob = file.data;
