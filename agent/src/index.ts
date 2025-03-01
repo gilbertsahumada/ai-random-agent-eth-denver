@@ -21,7 +21,8 @@ import {
 import { defaultCharacter } from "./defaultCharacter.ts";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { TTSGenerationPlugin } from "@elizaos/plugin-tts"
-import { generatePodcast } from "./customAction.ts"; 
+import { generatePodcast } from "./customAction.ts";
+import { DiscordClientInterface } from "@elizaos/client-discord";
 
 import fs from "fs";
 import net from "net";
@@ -238,7 +239,7 @@ async function loadCharacter(filePath: string): Promise<Character> {
     if (!content) {
         throw new Error(`Character file not found: ${filePath}`);
     }
-    const character = JSON.parse(content);    
+    const character = JSON.parse(content);
     return jsonToCharacter(filePath, character);
 }
 
@@ -581,6 +582,7 @@ export async function initializeClients(
     // each client can only register once
     // and if we want two we can explicitly support it
     const clients: ClientInstance[] = [];
+    console.log("Character client :", character.plugins);
     // const clientTypes = clients.map((c) => c.name);
     // elizaLogger.log("initializeClients", clientTypes, "for", character.name);
 
@@ -694,23 +696,23 @@ function initializeCache(
 }
 
 async function findDatabaseAdapter(runtime: AgentRuntime) {
-  const { adapters } = runtime;
-  let adapter: Adapter | undefined;
-  // if not found, default to sqlite
-  if (adapters.length === 0) {
-    const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
-    const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
-    adapter = sqliteAdapterPluginDefault.adapters[0];
-    if (!adapter) {
-      throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+    const { adapters } = runtime;
+    let adapter: Adapter | undefined;
+    // if not found, default to sqlite
+    if (adapters.length === 0) {
+        const sqliteAdapterPlugin = await import('@elizaos-plugins/adapter-sqlite');
+        const sqliteAdapterPluginDefault = sqliteAdapterPlugin.default;
+        adapter = sqliteAdapterPluginDefault.adapters[0];
+        if (!adapter) {
+            throw new Error("Internal error: No database adapter found for default adapter-sqlite");
+        }
+    } else if (adapters.length === 1) {
+        adapter = adapters[0];
+    } else {
+        throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
     }
-  } else if (adapters.length === 1) {
-    adapter = adapters[0];
-  } else {
-    throw new Error("Multiple database adapters found. You must have no more than one. Adjust your plugins configuration.");
-    }
-  const adapterInterface = adapter?.init(runtime);
-  return adapterInterface;
+    const adapterInterface = adapter?.init(runtime);
+    return adapterInterface;
 }
 
 async function startAgent(
