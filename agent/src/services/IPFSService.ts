@@ -9,8 +9,18 @@ export class IPFSService {
     constructor(pinataJwt: string) {
         this.pinata = new PinataSDK({
             pinataJwt,
-            pinataGateway: "moccasin-beautiful-sturgeon-965.mypinata.cloud",
+            pinataGateway: "ipfs.io",
         });
+    }
+
+    async getFileContent(ipfsHash: string): Promise<any> { 
+        try {
+            const file = await this.pinata.gateways.get(ipfsHash);
+            return file;
+        } catch (error) {
+            elizaLogger.error("IPFS Download Error:", error);
+            throw error;
+        }
     }
 
     async uploadAudioFile(filePath: string): Promise<string> {

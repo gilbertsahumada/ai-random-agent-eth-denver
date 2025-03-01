@@ -1,4 +1,3 @@
-
 import { abi } from "../abi/abi";
 import { abi as abiFlow } from "../abi/abiFlow";
 import { createWalletClient, createPublicClient, http } from "viem";
@@ -162,13 +161,19 @@ export class BlockchainService {
         }
     }
 
-    async callStoryProtocol(mediaUrl: string, nftMetadataIpfs: string): Promise<void> {
+    async callStoryProtocol(mediaUrl: string, nftMetadataIpfs: string): Promise<any> {
         try {
-
+            const pinataJwt = process.env.PINATA_JWT
+            if (!pinataJwt) {
+                throw new Error("Missing Pinata JWT")
+            }
+            const ipfsService = new IPFSService(pinataJwt);
             const currentTimestamp = Math.floor(Date.now() / 1000).toString();
-            const urlImage = 'https://moccasin-beautiful-sturgeon-965.mypinata.cloud/ipfs/bafkreifqzkq7tzppc22fa2f52sg2cruvomne2tp34yhdnx3ub2xw24b52m'
-            const imageHash = this.getHashFromUrl(urlImage)
-            const mediaHash = this.getHashFromUrl(mediaUrl)
+            const urlImage = 'bafkreifqzkq7tzppc22fa2f52sg2cruvomne2tp34yhdnx3ub2xw24b52m'
+            const image = await ipfsService.getFileContent(urlImage)
+            console.log("Image:", image);
+            const imageHash = await this.getImageHash(urlImage); // Use the new method
+            const mediaHash = ""//await this.getHashFromUrl(mediaUrl)
 
             const ipMetadata = {
                 title: 'BuffiCast 2025',
@@ -188,13 +193,6 @@ export class BlockchainService {
                 mediaType: 'audio/mpeg',
             }
 
-            const pinataJwt = process.env.PINATA_JWT
-            if (!pinataJwt) {
-                throw new Error("Missing Pinata JWT")
-            }
-
-            const ipfsService = new IPFSService(pinataJwt);
-
             const ipMetadataHash = await ipfsService.uploadStoryMetadata(ipMetadata)
             const ipHash = createHash('sha256').update(JSON.stringify(ipMetadataHash)).digest('hex')
             const nftHash = createHash('sha256').update(JSON.stringify(nftMetadataIpfs)).digest('hex')
@@ -213,22 +211,50 @@ export class BlockchainService {
             })
 
             elizaLogger.info("Story Protocol Response:", response);
+            return { txHash: response.txHash, ipdId: response.ipId, tokenId: response.tokenId }
+
         } catch (error) {
             elizaLogger.error("Story Protocol Error:", error);
             throw error;
-
         }
     }
 
-    async getFileHash(file: File): Promise<string> {
-        const arrayBuffer = await file.arrayBuffer()
-        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer)
-        return toHex(new Uint8Array(hashBuffer), { size: 32 })
+    async getImageHash(imageHash: string): Promise<string> {
+        try {
+            const response = await fetch(`https://ipfs.io/ipfs/${imageHash}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const arrayBuffer = await blob.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            return '0x' + Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        } catch (error) {
+            elizaLogger.error("Image Hash Error:", error);
+            throw error;
+        }
     }
 
-    async getHashFromUrl(url: string): Promise<string> {
-        const response = await axios.get(url, { responseType: "arraybuffer" });
-        const buffer = Buffer.from(response.data);
-        return "0x" + createHash("sha256").update(buffer).digest("hex");
+    async getFileHash(file: File | Blob): Promise<string> {
+        try {
+            let arrayBuffer: ArrayBuffer;
+
+            if (file instanceof File) {
+                arrayBuffer = await file.arrayBuffer();
+            } else {
+                arrayBuffer = await file.arrayBuffer();
+            }
+
+            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+            return '0x' + Array.from(new Uint8Array(hashBuffer))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('');
+        } catch (error) {
+            elizaLogger.error("Hash Error:", error);
+            throw error;
+        }
     }
 }

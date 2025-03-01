@@ -46,6 +46,14 @@ export const generatePodcast: Action = {
             return false;
         }
 
+        const blockchainService = new BlockchainService(
+            privateKey,
+            contractAddress,
+            contractAddressFlow
+        );
+        //await blockchainService.callStoryProtocol(`bafybeig2vohdwoz7xdskfpewhimjxpio7r2uwrzpufc24hovrxhazsan4q`, 'bafkreidyjirkatjy5nzdkuwg2asn4ifealaomc7pnch7uhuuue2b4zizrq');
+
+        
         try {
             // Initialize services
             const blockchainService = new BlockchainService(
@@ -87,13 +95,16 @@ export const generatePodcast: Action = {
             const metadataHash = await ipfsService.uploadMetadata(metadata);
 
             // Update token URI
-            _callback({ text: "🔄 Updating NFT metadata..." });
+            _callback({ text: "🔄 Updating NFT metadata for Tokenized Podcast ..." });
             await blockchainService.updateTokenURI(`https://ipfs.io/ipfs/${metadataHash}`);
 
+            _callback({ text: "🔗 Minting NFT in Story ..." });
             /// Story INtegration
+            const resp = await blockchainService.callStoryProtocol(`https://ipfs.io/ipfs/${audioHash}`, metadataHash);
 
+            _callback({ text: `✨ Podcast secured on story protocol 🎉 Hash: ${resp.txHash} - Ip Id : ${resp.ipId}` });
 
-            _callback({ text: "✨ Podcast generated and minted successfully! Check OpenSea to view your NFT 🎉" });
+            _callback({ text: "✨ Podcast generated and minted successfully! Check OpenSea to view your NFT 🎉: https://testnets.opensea.io/collection/podcast-chapter-1" });
             return true;
 
         } catch (error) {
@@ -101,6 +112,7 @@ export const generatePodcast: Action = {
             _callback({ text: "❌ An error occurred while generating the podcast." });
             return false;
         }
+        
     },
 
     examples: [
