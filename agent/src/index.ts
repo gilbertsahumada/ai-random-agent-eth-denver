@@ -22,7 +22,6 @@ import { defaultCharacter } from "./defaultCharacter.ts";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { TTSGenerationPlugin } from "@elizaos/plugin-tts"
 import { generatePodcast } from "./customAction.ts";
-import { DiscordClientInterface } from "@elizaos/client-discord";
 
 import fs from "fs";
 import net from "net";
@@ -616,7 +615,7 @@ export async function createAgent(
         actions: [generatePodcast],
         plugins: [
             bootstrapPlugin as Plugin,
-            TTSGenerationPlugin as Plugin  // Make sure this is included
+            TTSGenerationPlugin as Plugin,  // Make sure this is included
         ],
         providers: [],
         managers: [],

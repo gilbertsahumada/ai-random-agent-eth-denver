@@ -33,15 +33,28 @@ export const generatePodcast: Action = {
         if (!_callback) throw new Error("Callback is required");
         const messages = extractMessages(_memory.content.text);
 
+        const privateKey = process.env.EVM_PRIVATE_KEY;
+        const contractAddress = process.env.CONTRACT_ADDRESS;
+        const contractAddressFlow = process.env.CONTRACT_ADDRESS_FLOW;
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        const xiApiKey = process.env.ELEVENLABS_XI_API_KEY;
+        const pinataJwt = process.env.PINATA_JWT;
+
+        if (!privateKey || !contractAddress || !contractAddressFlow || !apiKey || !xiApiKey || !pinataJwt) {
+            _callback({ text: "Missing environment variables. Please check the configuration." });
+            return false;
+        }
+
         try {
             // Initialize services
             const blockchainService = new BlockchainService(
-                process.env.EVM_PRIVATE_KEY!,
-                process.env.CONTRACT_ADDRESS!
+                privateKey,
+                contractAddress,
+                contractAddressFlow
             );
 
-            const audioService = new AudioService(process.env.ELEVENLABS_XI_API_KEY!);
-            const ipfsService = new IPFSService(process.env.PINATA_JWT!);
+            const audioService = new AudioService(xiApiKey);
+            const ipfsService = new IPFSService(pinataJwt);
 
             // Get Random parameters
             _callback({ text: "Requesting random parameters from Chainlink VRF..." });

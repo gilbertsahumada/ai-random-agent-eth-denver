@@ -1,10 +1,9 @@
 
 import { abi  } from "../abi/abi";
 import { abi as abiFlow } from "../abi/abiFlow";
-
-import { createWalletClient, createPublicClient, http, PublicClient } from "viem";
+import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { avalancheFuji, flowTestnet } from "viem/chains";
+import { flowTestnet } from "viem/chains";
 import { elizaLogger } from "@elizaos/core";
 import { RandomParameters } from "../interfaces/Podcast";
 
@@ -12,20 +11,22 @@ export class BlockchainService {
     private publicClient;
     private walletClient;
     private contractAddress;
-    private contractAddressFlow;
+    private contractAddressFlow
 
-    constructor(privateKey: string, contractAddress: string) {
+    constructor(privateKey: string, contractAddress: string, contractAddressFlow: string) {
         const account = privateKeyToAccount(`0x${privateKey}`);
+        console.log("Account:", account);
+        this.contractAddressFlow = contractAddressFlow;
         this.contractAddress = contractAddress;
         
         this.publicClient = createPublicClient({
-            chain: avalancheFuji,
-            transport: http('https://rpc.ankr.com/avalanche_fuji')
+            chain: flowTestnet,
+            transport: http()
         });
 
         this.walletClient = createWalletClient({
-            chain: avalancheFuji,
-            transport: http('https://rpc.ankr.com/avalanche_fuji'),
+            chain: flowTestnet,
+            transport: http(),
             account
         });
     }
@@ -33,15 +34,29 @@ export class BlockchainService {
     async requestRandomParameters(): Promise<RandomParameters> {
         try {
             const { request } = await this.publicClient.simulateContract({
-                address: this.contractAddress,
-                abi: abi,
-                functionName: "requestRandomParameters",
+                address: this.contractAddressFlow as `0x${string}`,
+                abi: abiFlow,
+                functionName: "generateParametersAndMintNFT",
+                account: this.walletClient.account
             });
 
-            const tx = await this.walletClient.writeContract(request);
-            elizaLogger.info("Random Request Transaction:", tx);
+            console.log("Contract simulated");
+
+            // Other EVM Chain
+            /*
+            const { request } = await this.publicClient.simulateContract({
+                address: this.contractAddress,
+                abi: abi,
+                functionName: "generateParametersAndMintNFT",
+            });
+            */
+
+            const txParams = await this.walletClient.writeContract(request);
+            elizaLogger.info("Random Request Transaction:", txParams);
+            return txParams
+            // Wait for VRF event
+            //return await this.waitForVRFEvent();
             
-            return await this.waitForVRFEvent();
         } catch (error) {
             elizaLogger.error("Random Request Error:", error);
             throw error;
@@ -106,11 +121,21 @@ export class BlockchainService {
     async updateTokenURI(metadataUrl: string): Promise<string> {
         try {
             const { request } = await this.publicClient.simulateContract({
+                address: this.contractAddressFlow as `0x${string}`,
+                abi: abi,
+                functionName: "updateLastTokenURI",
+                account: this.walletClient.account,
+                args: [metadataUrl]
+            });
+
+            /*
+            const { request } = await this.publicClient.simulateContract({
                 address: this.contractAddress,
                 abi: abi,
                 functionName: "updateLastTokenURI",
                 args: [metadataUrl]
             });
+            */
 
             const tx = await this.walletClient.writeContract(request);
             elizaLogger.info("Token URI Updated:", tx);
