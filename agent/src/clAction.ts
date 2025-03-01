@@ -12,10 +12,9 @@ import { IPFSService } from "./services/IPFSService";
 import { PodcastPrompt, PodcastMetadata } from "./interfaces/Podcast";
 import { Anthropic } from '@anthropic-ai/sdk';
 import { extractMessages } from "./utils/utils";
-import { StoryClient, StoryConfig } from "@story-protocol/core-sdk";
 
-export const generatePodcast: Action = {
-    name: "GENERATE_SPEECH",
+export const generatePodcastCL: Action = {
+    name: "RANDOMIZE_SPEECH",
     similes: [],
     description: "Generate a podcast with VRF randomization and mint it as NFT",
 
@@ -46,27 +45,20 @@ export const generatePodcast: Action = {
             return false;
         }
 
-        const blockchainService = new BlockchainService(
-            privateKey,
-            contractAddress,
-            contractAddressFlow
-        );
-        //await blockchainService.callStoryProtocol(`bafybeig2vohdwoz7xdskfpewhimjxpio7r2uwrzpufc24hovrxhazsan4q`, 'bafkreidyjirkatjy5nzdkuwg2asn4ifealaomc7pnch7uhuuue2b4zizrq');
-
-        
         try {
             // Initialize services
             const blockchainService = new BlockchainService(
                 privateKey,
                 contractAddress,
-                contractAddressFlow
+                contractAddressFlow,
+                false
             );
 
             const audioService = new AudioService(xiApiKey);
             const ipfsService = new IPFSService(pinataJwt);
 
             // Get Random parameters
-            _callback({ text: "🎲 Requesting random parameters from Flow Blockchain ..." });
+            _callback({ text: "🎲 Requesting random parameters from Chainlink VRF ..." });
             const randomParams = await blockchainService.requestRandomParameters();
 
             // Generate text content
@@ -100,7 +92,7 @@ export const generatePodcast: Action = {
 
             _callback({ text: "🔗 Minting NFT in Story ..." });
             /// Story INtegration
-            const resp = await blockchainService.callStoryProtocol(`https://ipfs.io/ipfs/${audioHash}`, metadataHash);
+            const resp = await blockchainService.callStoryProtocol(audioHash, metadataHash);
 
             _callback({ text: `✨ Podcast secured on story protocol 🎉 Hash: ${resp.txHash} - Ip Id : ${resp.ipId}` });
 
@@ -112,28 +104,27 @@ export const generatePodcast: Action = {
             _callback({ text: "❌ An error occurred while generating the podcast." });
             return false;
         }
-        
     },
 
     examples: [
         [
             {
                 user: "{{user1}}",
-                content: { text: `create me a speech "eth denver is awesome", "bufficast project is the best"` }
+                content: { text: `use Chainlink to create me a speech "eth denver is awesome", "bufficast project is the best"` }
             },
             {
                 user: "{{agentName}}",
-                content: { text: "Let me do it for you!!", action: "GENERATE_SPEECH" }
+                content: { text: "Let me do it for you!!", action: "RANDOMIZE_SPEECH" }
             }
         ],
         [
             {
                 user: "{{user1}}",
-                content: { text: `Create me a podcast "ethereum is great", "avalanche is great", "solana sucks"` }
+                content: { text: `Create me a podcast using Chainlink "ethereum is great", "avalanche is great", "solana sucks"` }
             },
             {
                 user: "{{agentName}}",
-                content: { text: "I'll start to create!", action: "GENERATE_SPEECH" }
+                content: { text: "I'll start to create!", action: "RANDOMIZE_SPEECH" }
             }
         ]
     ]

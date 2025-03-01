@@ -2,7 +2,7 @@ import { abi } from "../abi/abi";
 import { abi as abiFlow } from "../abi/abiFlow";
 import { createWalletClient, createPublicClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { flowTestnet, storyTestnet } from "viem/chains";
+import { flowTestnet, storyTestnet, avalancheFuji } from "viem/chains";
 import { elizaLogger } from "@elizaos/core";
 import { RandomParameters } from "../interfaces/Podcast";
 import { StoryClient, StoryConfig } from "@story-protocol/core-sdk";
@@ -19,13 +19,15 @@ export class BlockchainService {
     private contractAddress;
     private contractAddressFlow;
     private nftStoryAddress;
+    private isFlow;
 
 
-    constructor(privateKey: string, contractAddress: string, contractAddressFlow: string) {
+    constructor(privateKey: string, contractAddress: string, contractAddressFlow: string, isFlow: boolean) {
         const account = privateKeyToAccount(`0x${privateKey}`);
         this.contractAddressFlow = contractAddressFlow;
         this.contractAddress = contractAddress;
         this.nftStoryAddress = "0xc32A8a0FF3beDDDa58393d022aF433e78739FAbc"
+        this.isFlow = isFlow
 
         this.storyClient = StoryClient.newClient({
             account: account,
@@ -33,14 +35,15 @@ export class BlockchainService {
             chainId: "aeneid",
         });
 
+
         this.publicClient = createPublicClient({
-            chain: flowTestnet,
+            chain: isFlow ? flowTestnet : avalancheFuji,
             transport: http(),
 
         });
 
         this.walletClient = createWalletClient({
-            chain: flowTestnet,
+            chain: flowTestnet ? flowTestnet : avalancheFuji,
             transport: http(),
             account
         });
@@ -48,12 +51,31 @@ export class BlockchainService {
 
     async requestRandomParameters(): Promise<RandomParameters> {
         try {
-            const { request } = await this.publicClient.simulateContract({
-                address: this.contractAddressFlow as `0x${string}`,
-                abi: abiFlow,
-                functionName: "generateParametersAndMintNFT",
-                account: this.walletClient.account
-            });
+
+            if (this.isFlow) {
+                const { request } = await this.publicClient.simulateContract({
+                    address: this.contractAddressFlow as `0x${string}`,
+                    abi: abiFlow,
+                    functionName: "generateParametersAndMintNFT",
+                    account: this.walletClient.account
+                });
+
+                const txParams = await this.walletClient.writeContract(request);
+                elizaLogger.info("Random Request Transaction:", txParams);
+                return txParams
+            } else {
+                const { request } = await this.publicClient.simulateContract({
+                    address: this.contractAddress as `0x${string}`,
+                    abi: abi,
+                    functionName: "requestRandomParameters",
+                    account: this.walletClient.account
+                });
+
+                const txParams = await this.walletClient.writeContract(request);
+                elizaLogger.info("Random Request Transaction:", txParams);
+                return await this.waitForVRFEvent();
+            }
+
 
             console.log("Contract simulated");
 
@@ -66,12 +88,8 @@ export class BlockchainService {
             });
             */
 
-            const txParams = await this.walletClient.writeContract(request);
-            elizaLogger.info("Random Request Transaction:", txParams);
-            return txParams
             // Wait for VRF event
             //return await this.waitForVRFEvent();
-
         } catch (error) {
             elizaLogger.error("Random Request Error:", error);
             throw error;
@@ -135,8 +153,9 @@ export class BlockchainService {
 
     async updateTokenURI(metadataUrl: string): Promise<string> {
         try {
+
             const { request } = await this.publicClient.simulateContract({
-                address: this.contractAddressFlow as `0x${string}`,
+                address: this.isFlow ? this.contractAddressFlow as `0x${string}` : this.contractAddress as `0x${string}`,
                 abi: abi,
                 functionName: "updateLastTokenURI",
                 account: this.walletClient.account,
@@ -170,10 +189,17 @@ export class BlockchainService {
             const ipfsService = new IPFSService(pinataJwt);
             const currentTimestamp = Math.floor(Date.now() / 1000).toString();
             const urlImage = 'bafkreifqzkq7tzppc22fa2f52sg2cruvomne2tp34yhdnx3ub2xw24b52m'
+
+            console.log("Obteniendo imagen")
             const image = await ipfsService.getFileContent(urlImage)
-            console.log("Image:", image);
-            const imageHash = await this.getImageHash(urlImage); // Use the new method
-            const mediaHash = ""//await this.getHashFromUrl(mediaUrl)
+            console.log("Imagen obtenida : ", image)
+
+            const imageHash = await this.getFileHash(image); 
+            console.log("Hash de la imagen")
+            const audio = await ipfsService.getFileContent(mediaUrl)
+            console.log("Audio obtenido")
+            const mediaHash = await this.getFileHash(audio)
+            console.log("Hash del audio")
 
             const ipMetadata = {
                 title: 'BuffiCast 2025',
@@ -219,35 +245,20 @@ export class BlockchainService {
         }
     }
 
-    async getImageHash(imageHash: string): Promise<string> {
+    async getFileHash(file: any): Promise<string> {
         try {
-            const response = await fetch(`https://ipfs.io/ipfs/${imageHash}`);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch image: ${response.statusText}`);
-            }
-
-            const blob = await response.blob();
-            const arrayBuffer = await blob.arrayBuffer();
-            const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-            return '0x' + Array.from(new Uint8Array(hashBuffer))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
-        } catch (error) {
-            elizaLogger.error("Image Hash Error:", error);
-            throw error;
-        }
-    }
-
-    async getFileHash(file: File | Blob): Promise<string> {
-        try {
-            let arrayBuffer: ArrayBuffer;
-
-            if (file instanceof File) {
-                arrayBuffer = await file.arrayBuffer();
+            let blob: Blob;
+            
+            // Handle the case when file is an object with data property
+            if (file.data && file.data instanceof Blob) {
+                blob = file.data;
+            } else if (file instanceof Blob || file instanceof File) {
+                blob = file;
             } else {
-                arrayBuffer = await file.arrayBuffer();
+                throw new Error('Invalid file format');
             }
 
+            const arrayBuffer = await blob.arrayBuffer();
             const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
             return '0x' + Array.from(new Uint8Array(hashBuffer))
                 .map(b => b.toString(16).padStart(2, '0'))

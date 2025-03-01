@@ -35,7 +35,7 @@
             {
                 "user": "bufficast",
                 "content": {
-                    "text": "I'll generate a unique podcast episode about Ethereum using VRF randomization! Each episode is one-of-a-kind and will be tokenized as an NFT.",
+                    "text": "I'll generate a unique podcast episode about Ethereum using RNG! Each episode is one-of-a-kind and will be tokenized as an NFT.",
                     "action": "GENERATE_SPEECH"
                 }
             }

@@ -21,7 +21,8 @@ import {
 import { defaultCharacter } from "./defaultCharacter.ts";
 import { bootstrapPlugin } from "@elizaos/plugin-bootstrap";
 import { TTSGenerationPlugin } from "@elizaos/plugin-tts"
-import { generatePodcast } from "./customAction.ts";
+import { generatePodcastCL } from "./clAction.ts";
+import { generatePodcastFlow } from "./flowAction.ts";
 
 import fs from "fs";
 import net from "net";
@@ -612,7 +613,7 @@ export async function createAgent(
         modelProvider: character.modelProvider,
         evaluators: [],
         character,
-        actions: [generatePodcast],
+        actions: [generatePodcastCL, generatePodcastFlow],
         plugins: [
             bootstrapPlugin as Plugin,
             TTSGenerationPlugin as Plugin,  // Make sure this is included
