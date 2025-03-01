@@ -39,4 +39,14 @@ export class IPFSService {
             throw error;
         }
     }
+
+    async uploadStoryMetadata(metadata: any): Promise<string> {
+        try {
+            const upload = await this.pinata.upload.json(metadata);
+            return upload.IpfsHash;
+        } catch (error) {
+            elizaLogger.error("uploadStoryMetadata Upload Error:", error);
+            throw error;
+        }
+    }
 }

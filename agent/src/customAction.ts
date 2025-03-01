@@ -12,6 +12,7 @@ import { IPFSService } from "./services/IPFSService";
 import { PodcastPrompt, PodcastMetadata } from "./interfaces/Podcast";
 import { Anthropic } from '@anthropic-ai/sdk';
 import { extractMessages } from "./utils/utils";
+import { StoryClient, StoryConfig } from "@story-protocol/core-sdk";
 
 export const generatePodcast: Action = {
     name: "GENERATE_SPEECH",
@@ -88,6 +89,9 @@ export const generatePodcast: Action = {
             // Update token URI
             _callback({ text: "🔄 Updating NFT metadata..." });
             await blockchainService.updateTokenURI(`https://ipfs.io/ipfs/${metadataHash}`);
+
+            /// Story INtegration
+
 
             _callback({ text: "✨ Podcast generated and minted successfully! Check OpenSea to view your NFT 🎉" });
             return true;
